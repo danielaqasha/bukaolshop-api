@@ -5,6 +5,11 @@ const axios = require('axios');
 const app = express();
 app.use(cors());
 
+try {
+  const response = await axios.get(url);
+  console.log("Data berhasil diambil dari:", url); // Tambahan log
+  const html = response.data;
+  
 app.get('/', async (req, res) => {
   const url = req.query.url;
   if (!url) return res.status(400).json({ error: 'URL tidak ditemukan' });
@@ -28,9 +33,9 @@ app.get('/', async (req, res) => {
 
     res.json(results);
   } catch (error) {
-    res.status(500).json({ error: 'Gagal mengambil data', detail: error.message });
+  console.error("Gagal fetch:", error.message);
+  res.status(500).json({ error: 'Gagal mengambil data', detail: error.message });
   }
-});
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
