@@ -1,38 +1,38 @@
-const express = require("express");
-const cors = require("cors");
-const axios = require("axios");
+const express = require('express');
+const cors = require('cors');
+const axios = require('axios');
 
 const app = express();
-const PORT = process.env.PORT || 8080;
-
 app.use(cors());
 
-app.get("/", async (req, res) => {
+app.get('/', async (req, res) => {
   const url = req.query.url;
-  if (!url) return res.status(400).json({ error: "Missing url parameter" });
+  if (!url) return res.status(400).json({ error: 'URL tidak ditemukan' });
 
   try {
     const response = await axios.get(url);
     const html = response.data;
 
-    const produkRegex = /<a href="([^"]+)" class="product-list">(.*?)<\/a>/gs;
-    const hasil = [];
+    // Contoh parsing sederhana
+    const productRegex = /<a href="(\/produk\/[^"]+)[\s\S]*?<h3[^>]*>(.*?)<\/h3>[\s\S]*?<span[^>]*>(Rp[\d.]+)/g;
+    const results = [];
     let match;
 
-    while ((match = produkRegex.exec(html)) !== null) {
-      const link = "https://mastapay.olshopku.com" + match[1];
-      const nama = match[2].match(/<h3>(.*?)<\/h3>/s)?.[1]?.trim() ?? "Tanpa Nama";
-      const harga = match[2].match(/<div class="price">(.*?)<\/div>/s)?.[1]?.trim() ?? "Tanpa Harga";
-
-      hasil.push({ nama, harga, link });
+    while ((match = productRegex.exec(html)) !== null) {
+      results.push({
+        link: "https://mastapay.olshopku.com" + match[1],
+        nama: match[2].trim(),
+        harga: match[3].trim(),
+      });
     }
 
-    res.json(hasil);
-  } catch (err) {
-    res.status(500).json({ error: "Gagal mengambil data" });
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: 'Gagal mengambil data', detail: error.message });
   }
 });
 
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`API aktif di port ${PORT}`);
 });
