@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
-const cheerio = require("cheerio");
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -10,28 +9,27 @@ app.use(cors());
 
 app.get("/", async (req, res) => {
   const url = req.query.url;
-
-  if (!url) {
-    return res.status(400).json({ error: "URL parameter is required" });
-  }
+  if (!url) return res.status(400).json({ error: "Missing url parameter" });
 
   try {
     const response = await axios.get(url);
-    const $ = cheerio.load(response.data);
-    const produk = [];
+    const html = response.data;
 
-    $(".produk-wrap").each((i, el) => {
-      const nama = $(el).find(".produk-nama").text().trim();
-      const harga = $(el).find(".produk-harga").text().trim();
-      const link = $(el).find("a").attr("href");
-      const fullLink = link.startsWith("http") ? link : `https://mastapay.olshopku.com${link}`;
-      
-      produk.push({ nama, harga, link: fullLink });
-    });
+    const produkRegex = /<a href="([^"]+)" class="product-list">(.*?)<\/a>/gs;
+    const hasil = [];
+    let match;
 
-    res.json(produk);
+    while ((match = produkRegex.exec(html)) !== null) {
+      const link = "https://mastapay.olshopku.com" + match[1];
+      const nama = match[2].match(/<h3>(.*?)<\/h3>/s)?.[1]?.trim() ?? "Tanpa Nama";
+      const harga = match[2].match(/<div class="price">(.*?)<\/div>/s)?.[1]?.trim() ?? "Tanpa Harga";
+
+      hasil.push({ nama, harga, link });
+    }
+
+    res.json(hasil);
   } catch (err) {
-    res.status(500).json({ error: "Gagal mengambil data produk", detail: err.message });
+    res.status(500).json({ error: "Gagal mengambil data" });
   }
 });
 
