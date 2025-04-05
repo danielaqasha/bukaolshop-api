@@ -3,23 +3,29 @@ const axios = require('axios');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Route root
 app.get('/', (req, res) => {
   res.send('BukaOlshop API is running!');
 });
 
-// Route dinamis untuk kategori
 app.get('/kategori/:slug', async (req, res) => {
   const { slug } = req.params;
-  const url = `https://mastapay.olshopku.com/kategori/${slug}`;
-  const apiUrl = `https://api.nielz.my.id/api/v2/fitur/bo?url=${encodeURIComponent(url)}`;
+  const fullUrl = `https://mastapay.olshopku.com/kategori/${slug}`;
+
+  const apiUrl = `https://api.nielz.my.id/api/v2/fitur/bo`;
 
   try {
-    const response = await axios.get(apiUrl);
+    const response = await axios.get(apiUrl, {
+      params: {
+        url: fullUrl,
+        activation: 'nielzbo',
+        tipe: 'produk'
+      }
+    });
+
     res.json(response.data);
   } catch (error) {
-    console.error('Error fetching data:', error.message);
-    res.status(500).json({ error: 'Gagal mengambil data produk' });
+    console.error('Gagal ambil data:', error.message);
+    res.status(500).json({ error: 'Gagal mengambil data produk dari kategori' });
   }
 });
 
