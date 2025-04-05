@@ -1,43 +1,28 @@
 const express = require('express');
-const cors = require('cors');
 const axios = require('axios');
-
 const app = express();
-app.use(cors());
+const PORT = process.env.PORT || 3000;
 
-app.get('/', async (req, res) => {
-  const url = req.query.url;
-  if (!url) return res.status(400).json({ error: 'URL tidak ditemukan' });
+// Route root
+app.get('/', (req, res) => {
+  res.send('BukaOlshop API is running!');
+});
+
+// Route dinamis untuk kategori
+app.get('/kategori/:slug', async (req, res) => {
+  const { slug } = req.params;
+  const url = `https://mastapay.olshopku.com/kategori/${slug}`;
+  const apiUrl = `https://api.nielz.my.id/api/v2/fitur/bo?url=${encodeURIComponent(url)}`;
 
   try {
-    const response = await axios.get(url);
-    const html = response.data;
-
-    // Log isi HTML mentah ke konsol Railway
-    console.log("=== HTML YANG DITERIMA ===");
-    console.log(html.slice(0, 1000)); // Potong biar log tidak terlalu besar
-
-    const productRegex = /<a href="(\/produk\/[^"]+)[\s\S]*?<h3[^>]*>(.*?)<\/h3>[\s\S]*?<span[^>]*>(Rp[\d.]+)/g;
-    const results = [];
-    let match;
-
-    while ((match = productRegex.exec(html)) !== null) {
-      results.push({
-        link: "https://mastapay.olshopku.com" + match[1],
-        nama: match[2].trim(),
-        harga: match[3].trim(),
-      });
-    }
-
-    console.log("Jumlah produk ditemukan:", results.length);
-    res.json(results);
+    const response = await axios.get(apiUrl);
+    res.json(response.data);
   } catch (error) {
-    console.error("Gagal ambil data:", error.message);
-    res.status(500).json({ error: 'Gagal mengambil data', detail: error.message });
+    console.error('Error fetching data:', error.message);
+    res.status(500).json({ error: 'Gagal mengambil data produk' });
   }
 });
 
-const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log(`API aktif di port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
