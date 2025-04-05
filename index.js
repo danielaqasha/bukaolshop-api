@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-const cheerio = require('cheerio');
 
 const app = express();
 app.use(cors());
@@ -12,27 +11,28 @@ app.get('/', async (req, res) => {
 
   try {
     const response = await axios.get(url);
-    const $ = cheerio.load(response.data);
+    const html = response.data;
 
+    // Log isi HTML mentah ke konsol Railway
+    console.log("=== HTML YANG DITERIMA ===");
+    console.log(html.slice(0, 1000)); // Potong biar log tidak terlalu besar
+
+    const productRegex = /<a href="(\/produk\/[^"]+)[\s\S]*?<h3[^>]*>(.*?)<\/h3>[\s\S]*?<span[^>]*>(Rp[\d.]+)/g;
     const results = [];
+    let match;
 
-    $('.produklist .produk-item').each((i, el) => {
-      const link = $(el).find('a').attr('href');
-      const nama = $(el).find('h3').text().trim();
-      const harga = $(el).find('.harga').text().trim();
-
-      if (link && nama && harga) {
-        results.push({
-          link: 'https://mastapay.olshopku.com' + link,
-          nama,
-          harga
-        });
-      }
-    });
+    while ((match = productRegex.exec(html)) !== null) {
+      results.push({
+        link: "https://mastapay.olshopku.com" + match[1],
+        nama: match[2].trim(),
+        harga: match[3].trim(),
+      });
+    }
 
     console.log("Jumlah produk ditemukan:", results.length);
     res.json(results);
   } catch (error) {
+    console.error("Gagal ambil data:", error.message);
     res.status(500).json({ error: 'Gagal mengambil data', detail: error.message });
   }
 });
